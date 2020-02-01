@@ -1,90 +1,78 @@
 package com.hillel.mvc.springboot.dao.userRepository;
 
-import com.hillel.mvc.springboot.dao.accountRepository.AccountRepository;
-import com.hillel.mvc.springboot.model.Account;
+import com.hillel.mvc.springboot.hibernateUtil.HibernateUtil;
 import com.hillel.mvc.springboot.model.User;
-import com.hillel.mvc.springboot.model.mappers.userMapper.UserMapper;
-import com.hillel.mvc.springboot.model.requests.UserRequest;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.HibernateException;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
+import javax.swing.text.TabableView;
+import javax.transaction.Transactional;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
+
+@Slf4j
 @Repository
+@Transactional
 public class UserRepositoryImpl implements UserRepository {
-
-    private Map<Integer, User> userMap = new ConcurrentHashMap<>();
-    private int userId = 0;
-
-    @Autowired
-    private UserMapper userMapper;
-
-    @Autowired
-    private AccountRepository accountRepository;
-
     @Override
     public List<User> getAllUsers() {
-        return new ArrayList<>(userMap.values());
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        List<User> users = session.createQuery("from User", User.class).list();
+        log.info("{} users obtained successfully", users.size());
+        session.close();
+        return users;
     }
 
     @Override
     public User getUserById(int id) {
-        return userMap.getOrDefault(id, null);
-    }
-
-    @Override
-    public boolean update(int id, UserRequest updatedUser) {
-        return update(id, userMapper.getUser(updatedUser));
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        User user = session.get(User.class, id);
+        log.info("User {} successfully obtained from the database", user);
+        session.close();
+        return user;
     }
 
     @Override
     public boolean update(int id, User updatedUser) {
-        User previous = userMap.get(id);
-        if(previous == null){
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            Transaction transaction = session.beginTransaction();
+            session.update(updatedUser);
+            transaction.commit();
+            session.close();
+        }catch (HibernateException e){
+            log.error(e.getMessage());
             return false;
         }
-
-        Account account = accountRepository.getMap().get(previous);
-        if(account != null){
-            account.setUser(updatedUser);
-            accountRepository.update(account.getId(), account);
-        }
-        userMap.put(id, updatedUser);
         return true;
     }
 
     @Override
     public boolean delete(int id) {
-        User userInMap = userMap.get(id);
-        if(userInMap == null){
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            Transaction transaction = session.beginTransaction();
+            User user = session.get(User.class, id);
+            session.delete(user);
+            transaction.commit();
+            session.close();
+        }catch (HibernateException e){
+            log.error(e.getMessage());
             return false;
         }
-
-        Account account = accountRepository.getMap().get(userInMap);
-        if(account != null){
-            accountRepository.delete(account.getId());
-        }
-        userMap.remove(id);
         return true;
     }
 
     @Override
-    public void save(UserRequest user) {
-        save(userMapper.getUser(user));
-    }
-
-    @Override
     public void save(User user) {
-        user.setId(userId);
-        userMap.put(userId, user);
-        userId++;
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            session.save(user);
+            session.close();
+        }catch (HibernateException e){
+            log.error(e.getMessage());
+        }
+        log.info("Saved successfully");
     }
 
-    @Override
-    public Map<Integer, User> getUserMap() {
-        return userMap;
-    }
 }

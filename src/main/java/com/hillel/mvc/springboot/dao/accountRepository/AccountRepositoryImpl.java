@@ -1,86 +1,84 @@
 package com.hillel.mvc.springboot.dao.accountRepository;
 
+import com.hillel.mvc.springboot.hibernateUtil.HibernateUtil;
 import com.hillel.mvc.springboot.model.Account;
 import com.hillel.mvc.springboot.model.User;
-import com.hillel.mvc.springboot.model.mappers.accountMapper.AccountMapper;
 import com.hillel.mvc.springboot.model.requests.AccountRequest;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.HibernateException;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
+import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Repository
-@Component
+@Transactional
 public class AccountRepositoryImpl implements AccountRepository {
-
-    private Map<Integer, Account> accountMap = new ConcurrentHashMap<>();
-    private Map<User, Account> userAccountMap = new ConcurrentHashMap<>();
-    private int accountId;
-
-    @Autowired
-    private AccountMapper accountMapper;
 
     @Override
     public List<Account> getAll() {
-        return new ArrayList<>(accountMap.values());
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        List<Account> accounts = session.createQuery("from Account", Account.class).list();
+        log.info("{} accounts obtained successfully", accounts.size());
+        session.close();
+        return accounts;
     }
 
     @Override
     public Account getById(int id) {
-        return accountMap.get(id);
-    }
-
-    @Override
-    public boolean save(AccountRequest accountRequest) {
-        Account account = accountMapper.getAccount(accountRequest);
-        if(account.getUser() == null){
-            return false;
-        }
-        return save(account);
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        session.beginTransaction();
+        Account account = session.get(Account.class, id);
+        log.info("Account obtained successfully {}", account);
+        session.close();
+        return account;
     }
 
     @Override
     public boolean save(Account account) {
-        account.setId(accountId);
-        accountMap.put(accountId, account);
-        userAccountMap.put(account.getUser(), account);
-        accountId++;
+        Transaction transaction;
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            session.save(account);
+            session.close();
+        }catch (HibernateException e){
+            log.error(e.getMessage());
+            return false;
+        }
+        log.info("Saved successfully");
         return true;
     }
 
     @Override
-    public boolean update(int id, AccountRequest accountRequest) {
-        Account updatedAccount = accountMapper.getAccount(accountRequest);
-        return update(id, updatedAccount);
-    }
-
-    @Override
     public boolean update(int id, Account account) {
-        if((account.getUser() == null) || (!accountMap.containsKey(id))){
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            Transaction transaction = session.beginTransaction();
+            session.update(account);
+            transaction.commit();
+            session.close();
+        }catch (HibernateException e){
+            log.error(e.getMessage());
             return false;
         }
-        accountMap.put(id, account);
-        userAccountMap.put(account.getUser(), account);
         return true;
     }
 
     @Override
     public boolean delete(int id) {
-        Account oldAccount = accountMap.get(id);
-        if(oldAccount == null){
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            Transaction transaction = session.beginTransaction();
+            Account account = session.get(Account.class, id);
+            session.delete(account);
+            transaction.commit();
+            session.close();
+        }catch (HibernateException e){
+            log.error(e.getMessage());
             return false;
         }
-        accountMap.remove(id);
-        userAccountMap.remove(oldAccount.getUser());
         return true;
     }
 
-    @Override
-    public Map<User, Account> getMap() {
-        return userAccountMap;
-    }
 }

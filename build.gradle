@@ -33,6 +33,8 @@ dependencies {
     compile group: 'org.apache.tomcat.embed', name: 'tomcat-embed-jasper', version: '9.0.29'
     compile group: 'org.springframework', name: 'spring-aop'
     compile group: 'org.aspectj', name: 'aspectjweaver'
+    compile group: 'org.hibernate', name: 'hibernate-gradle-plugin', version: '5.4.10.Final'
+    compile group: 'com.h2database', name: 'h2', version: '1.4.200'
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }

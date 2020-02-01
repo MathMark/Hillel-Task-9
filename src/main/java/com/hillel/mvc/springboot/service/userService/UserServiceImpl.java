@@ -7,6 +7,7 @@ import com.hillel.mvc.springboot.model.requests.UserRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.jws.soap.SOAPBinding;
 import java.util.List;
 
 @Component
@@ -25,22 +26,30 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserRequest getUserRequestById(int id) {
         User user = userRepository.getUserById(id);
-        return new UserRequest(user.getId(),
-                user.getLastName(),
-                user.getFirstName(),
-                user.getBirthDate().toString(),
-                user.getGender().toString());
+        return userMapper.getUserRequest(user);
+    }
+
+    @Override
+    public User getUserById(int id) {
+        return userRepository.getUserById(id);
     }
 
     @Override
     public void save(UserRequest userRequest) {
         User user = userMapper.getUser(userRequest);
+        System.out.println(user);
         userRepository.save(user);
     }
 
     @Override
     public void update(UserRequest userRequest) {
-        userRepository.update(userRequest.getId(), userRequest);
+        User user = userMapper.getUser(userRequest);
+        userRepository.update(userRequest.getId(), user);
+    }
+
+    @Override
+    public void update(User user) {
+        userRepository.save(user);
     }
 
     @Override

@@ -5,4 +5,5 @@ import com.hillel.mvc.springboot.model.requests.UserRequest;
 
 public interface UserMapper {
     User getUser(UserRequest userRequest);
+    UserRequest getUserRequest(User user);
 }

@@ -5,4 +5,5 @@ import com.hillel.mvc.springboot.model.requests.AccountRequest;
 
 public interface AccountMapper {
     Account getAccount(AccountRequest request);
+    AccountRequest getAccountRequest(Account account);
 }

@@ -18,6 +18,7 @@ import javax.validation.Valid;
 @Controller
 @RequestMapping("/accounts")
 public class AccountPageController {
+
     @Autowired
     private AccountService accountService;
 

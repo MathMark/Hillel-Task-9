@@ -25,10 +25,12 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public AccountRequest getAccountRequestById(int id) {
         Account account = accountRepository.getById(id);
-        return new AccountRequest(id,
-                                  account.getAmount(),
-                                  account.getCreationDate().toString(),
-                                  account.getUserId());
+        return accountMapper.getAccountRequest(account);
+    }
+
+    @Override
+    public Account getAccountById(int id) {
+        return accountRepository.getById(id);
     }
 
     @Override
@@ -38,8 +40,19 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    public void save(Account account) {
+        accountRepository.save(account);
+    }
+
+    @Override
     public boolean update(AccountRequest accountRequest) {
-        return accountRepository.update(accountRequest.getId(), accountRequest);
+        Account account = accountMapper.getAccount(accountRequest);
+        return accountRepository.update(accountRequest.getId(), account);
+    }
+
+    @Override
+    public void update(Account account) {
+        accountRepository.save(account);
     }
 
     @Override
